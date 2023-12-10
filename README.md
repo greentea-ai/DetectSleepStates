@@ -1,11 +1,13 @@
 # 16 – Zoldtea
-### Adatok forrása
+### Dataset source
 https://www.kaggle.com/competitions/child-mind-institute-detect-sleep-states/
 
-### Fájlok
-- data_analysis.ipynb - adatok vizualizációja és elemzése
-- data_main.ipynb - adatok előfeldolgozása, tanítás és kiértékelés
+### Files
+- data_analysis.ipynb - data visualization and analysis
+- main_cnn.ipynb - solution using CNN, runs in colab with the open in colab button (requires the additional evaluation.py file)
+- main_lstm.ipynb - solution using LSTM, runs in kaggle (exceeds colab ram limit)
+- evaluation.py - required by the solutions to run, this code is provided by the competition for scoring
 
-### Tanítás, kiértékelés
+### Training, evaluation
 
-A tanítási folyamat és a kiértékelés a main.ipynb-ben található
+Included in the solution files.
