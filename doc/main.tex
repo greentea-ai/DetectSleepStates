@@ -1,0 +1,198 @@
+\documentclass{article}
+
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2023
+
+
+% ready for submission
+%\usepackage{neurips_2023}
+
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+\usepackage[preprint]{neurips_2023}
+\usepackage{graphicx}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{neurips_2023}
+
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2023}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+
+
+\title{
+  Detecting Sleep States from Accelerometer Data using Deep Learning\\[1ex]
+  Alvási fázisok érzékelése gyorsulásmérő adatok alapján deep learning használatával
+}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+\author{%
+  Ádám M. Biró \\
+  \texttt{biro.adam@edu.bme.hu} \\
+  \And
+  Bálint Szalay \\
+  \texttt{balint.szalay@edu.bme.hu} \\
+  \And
+  Zsombor Szenyán \\
+  \texttt{zsomborszenyan@edu.bme.hu} \\
+  \AND
+  \\
+  Budapest University of Technology and Economics\\
+  Budapest, Hungary \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Monitoring sleep patterns is essential when researching sleep and sleep-related problems. Automatically analyzing wrist-worn accelerometer data could emerge as a low-cost and practical method for logging sleep periods when conducting large-scale studies. However, traditional rule-based methods have limited accuracy in detecting sleep onset and wakeup events. In this paper we explore ways how deep learning, a powerful machine learning technique could be used to detect sleep states more efficiently. We demonstate two possible approaches to solve this problem and compare the results.\\[2ex]
+\end{abstract}
+
+\section{Introduction}
+
+Fulfilling sleep plays a crucial role in maintaining physical and mental well–being. Yet a great number of people suffer from problems which negatively affect their sleep patterns. Inadequate quality and quantity of sleep is associated with various health problems, including depression and cardiovascular diseases.
+
+Monitoring sleep patterns is essential when researchers conduct studies on sleep. However, detecting the onset and end of sleep phases is a challenging task. Invasive sleep monitoring methods, such as polysomnography (PSG) are expensive and unsuitable for large–scale studies.
+
+In recent years, wearable devices equipped with accelerometers have emerged as a possible tool for non–invasive sleep monitoring. Traditional techniques which use human–engineered features achieve moderate success in recognizing sleep onset and wakeup events from accelerometer data due to the nuanced transition between sleep and wake states.
+
+A Kaggle competition was hosted by the Child Mind Institute \cite{child-mind-institute-detect-sleep-states} with the goal of finding new approaches to sleep state detection from accelerometer data utilizing the latest advancements in the field of data science.
+
+In this paper we explore the ways how deep learning, a popular machine learning method could be used to solve the task, and also document our model which we created as an entry to the Kaggle competition. Our work also serves as a homework project for the course Deep Learning in Practice at Budapest University of Technology and Economics.\footnote{Deep Learning in Practice with Python and LUA. \url{http://smartlab.tmit.bme.hu/oktatas-deep-learning}}
+
+
+\section{Dataset}
+\label{dataset}
+
+For our model, we used the dataset provided in the Kaggle competition \cite{child-mind-institute-detect-sleep-states}. The training dataset contained about 270 recordings of wrist–worn accelerometer data, annotated with two event types: onset, the beginning of sleep and wakeup, the end of a sleep phase. 
+
+The accelerometer recordings are time series data which contain two features the \textit{z-angle} and \textit{ENMO}. The z-angle is a metric derived from individual accelerometer components that is commonly used in sleep detection, and refers to the angle of the arm relative to the vertical axis of the body. ENMO is the Euclidean Norm Minus One of all accelerometer signals, with negative values rounded to zero. The time series have a resolution of five seconds intervals between data points.
+
+The data was labeled by sleep experts. The following policy was used to label sleep events according to the Kaggle competition description \footnote{\url{https://www.kaggle.com/competitions/child-mind-institute-detect-sleep-states/data}}:
+
+\begin{quote}
+"While sleep logbooks remain the gold-standard, when working with accelerometer data we refer to sleep as the longest single period of inactivity while the watch is being worn. For this data, we have guided raters with several concrete instructions:
+\begin{itemize}
+  \item A single sleep period must be at least 30 minutes in length
+    A single sleep period can be interrupted by bouts of activity that do not exceed 30 consecutive minutes
+  \item No sleep windows can be detected unless the watch is deemed to be worn for the duration (elaborated upon, below)
+The longest sleep window during the night is the only one which is recorded
+  \item If no valid sleep window is identifiable, neither an onset nor a wakeup event is recorded for that night.
+  \item Sleep events do not need to straddle the day-line, and therefore there is no hard rule defining how many may occur within a given period. However, no more than one window should be assigned per night. For example, it is valid for an individual to have a sleep window from 01h00–06h00 and 19h00–23h30 in the same calendar day, though assigned to consecutive nights
+  \item There are roughly as many nights recorded for a series as there are 24-hour periods in that series."
+\end{itemize}
+\end{quote}
+
+Figure \ref{fig:data-example}. shows an example from the input data, a portion of a time series labeled with sleep states.
+
+\begin{figure}
+  \label{fig:data-example}
+  \centering
+  \includegraphics[width=14cm]{fig1.png}
+  \caption{A roughly two–day period of a time series data, annotated with sleep states. The upper diagram shows the ENMO signal and the bottom diagram shows the Z–angle signal. The highlighted intervals are labeled as sleep periods.}
+\end{figure}
+
+\section{Exploring possible methods}
+
+We began our work by exploring existing work related to the subject. Loh et al. \cite{sleep1} and Malafeev et al. \cite{sleep3} showed that deep neural networks can be utilized for classification of sleep stages based on brainwave signal time series, such as polysomnography (PSG) recordings. Roberts et al. \cite{sleep2} showed that motion sensor data from consumer-grade wearables could possibly be used for sleep stage classification, as there is correlation between motion sensor data and PSG signal data. This led us to believe that deep learning could be successfully used on accelerometer data to detect sleep events. However, the previous works focused on classifying the sleep stage based on an fixed-length window of time series sequences, rather than providing a method to accurately find the boundaries of these stages in an series of arbitrary length.
+
+Typically, the output of a neural network is of a fixed-length. But in our case, the number of sleep onset and wakeup events can be any number, so we had to design a solution that overcomes this problem. A straightforward approach would be to divide the time series into smaller segments, as there is at most one sleep period recorded per night. However, this is problematic because there is no hard definition on the boundaries of a night, and the length of a sleep period can vary significantly.
+
+We tried two different approaches to solve this problem: a change point detection based approach and a momentary sleep state classification approach. Below we present the basic principle of these two approaches.
+
+\subsection{Approach 1: Change point detection}
+Change points are time points in a time series that mark the boundaries of certain states. In our problem, sleep and awake phases can be viewed as states and the change points represent onset and wake up events.
+
+Various methods exist to detect change points using classical machine learning. See Aminikhanghahi et al. \cite{aminikhanghahi17} for a survey of possible methods. Some works have examined the possibility of using deep neural networks for change point detection, notably Li et al. \cite{li2022automatic} and Ebrahimzadeh et al. \cite{multicpd}. We used an approach similar to those that are outlined in these works.
+
+Firstly, we trained a classifier deep neural network to recognize if there is a change point in a given segment of the sensor data series. The input is a fixed-length segment of the sensor data, which we call \textit{frames}, and the output is a one–hot encoded representation of either one of the following three classes: \textit{no change}, \textit{onset}, \textit{wake up}.
+
+Then we used a sliding window method to detect onset and wake up events during the prediction. We employed simple algorithmic methods to merge events that were detected multiple times and filter out sleep periods that are too short or should not be recorded according to the policy described in section \ref{dataset}.
+
+\subsection{Approach 2: Momentary state classification}
+The other method is based on predicting the current state. First of all we trained the model to predict whether a person sleep or not. In each case, the input was a window of length 200, where the training data was mixed according to whether the given person gets up, falls asleep, sleeps or is awake.
+
+Next, for each step in the series, we predicted whether the person was sleeping or not at that moment. Following this, we calculated a moving average for the predictions. Finally, we filtered out the points corresponding to sleep/wake and wake/sleep transitions, as these were precisely the events we were seeking. We then searched for the longest sleep event for each day. If it is greater than 30 minutes, it is a suitable sleep period.
+
+\section{Data preprocessing}
+In case of both models we standardized the ENMO and Z-angle data to have zero mean and one standard deviation.
+
+\section{Model architectures}
+\subsection{Approach 1}
+In the change point detection approach, we used one-dimensional convolutional layers to detect patterns in the time series data. On figure \ref{fig:model-cpd} the architecture of the model can be seen.
+
+\begin{figure}
+  \label{fig:model-cpd}
+  \centering
+  \includegraphics[width=5cm]{model_plot1.png}
+  \caption{An overview of the neural network of the CPD approach.}
+\end{figure}
+
+We used the Adam optimization algorithm and categorical crossentropy as a loss function.
+
+\subsection{Approach 2}
+In the following sentences, we will describe our model. The model input is a Bidirectional LSTM with 200 units. The input to this layer is (200, 3), where 200 refers to the length of a window, and 3 refers to the number of features. We want the full sequence to be returned, so we set the return\_sequences flag to true. The next layer is the same Bidirectional LSTM, we return the sequences, as mentioned before. The output layer is a dense layer with an input shape of (200, 400), where 200 refers to the length of the window, and 400 refers to the output of the Bidirectional LSTM. The output dimension of this layer is (200, 1), assigning a probability to every step of the window. If the probability is higher, the person is considered to be sleeping; if it is lower, then they are awake. The model architecture can be seen on figure \ref{fig:model-lstm}.
+
+\begin{figure}
+  \label{fig:model-lstm}
+  \centering
+  \includegraphics[width=8cm]{model_plot-2.png}
+  \caption{An overview of the neural network of the momentary classification approach.}
+\end{figure}
+
+\section{Evaluation}
+
+For the evaluation of the two approaches, we used the event prediction average precision score metric provided by Kaggle. A description from Kaggle:
+\begin{quote}
+    Event Detection Average Precision, an AUCPR metric for event detection in
+    time series and video.
+
+    This metric is similar to IOU-threshold average precision metrics commonly
+    used in object detection. For events occuring in time series, we replace the
+    IOU threshold with a time tolerance.
+
+    Submissions are evaluated on the average precision of detected events,
+    averaged over timestamp error tolerance thresholds, averaged over event
+    classes.
+
+    Detections are matched to ground-truth events within error tolerances, with
+    ambiguities resolved in order of decreasing confidence.
+\end{quote}
+
+We evaluated the models on 30 randomly selected series which were not used in the training.
+
+\subsection{Results}
+1st approach (CPD) best score: 0.23\\
+2nd approach (momentary classification) best score: 0.33
+
+\bibliographystyle{plain}
+\bibliography{sample}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\end{document}
