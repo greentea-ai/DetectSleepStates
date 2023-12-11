@@ -7,6 +7,8 @@ https://www.kaggle.com/competitions/child-mind-institute-detect-sleep-states/
 - main_cnn.ipynb - solution using CNN, runs in colab with the open in colab button (requires the additional evaluation.py file)
 - main_lstm.ipynb - solution using LSTM, runs in kaggle (exceeds colab ram limit). You need to add the 'child mind institute - detect sleep states' dataset to your kaggle notebook to run it.
 - evaluation.py - required by the solutions to run, this code is provided by the competition for scoring
+- documentation.pdf - project documentation
+- doc/* - documentation sources
 
 ### Training, evaluation
 
