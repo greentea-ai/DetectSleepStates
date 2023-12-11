@@ -1,4 +1,8 @@
 # 16 – Zoldtea
+
+## Disclaimer: work in progress
+We will be writing a Medium article, and our work is not finished. We will finalize the notebooks and documentation in one or two days.
+
 ### Dataset source
 https://www.kaggle.com/competitions/child-mind-institute-detect-sleep-states/
 
