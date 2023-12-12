@@ -222,11 +222,8 @@ In the following sentences, we will describe our model. The model input is a Bid
 
 \section{Evaluation}
 
-For the evaluation of the two approaches, we used the event prediction average precision score metric provided by Kaggle. A description from Kaggle:
+For the evaluation of the two models, we used a metric called Event Detection Average Precision. This metric is used by Kaggle to score the submissions to the competition. The metric is described on Kaggle as the following:\footnote{Source: Event Detection AP | Kaggle. \url{https://www.kaggle.com/code/metric/event-detection-ap}}
 \begin{quote}
-    Event Detection Average Precision, an AUCPR metric for event detection in
-    time series and video.
-
     This metric is similar to IOU-threshold average precision metrics commonly
     used in object detection. For events occuring in time series, we replace the
     IOU threshold with a time tolerance.
@@ -239,7 +236,7 @@ For the evaluation of the two approaches, we used the event prediction average p
     ambiguities resolved in order of decreasing confidence.
 \end{quote}
 
-We evaluated the models on 30 randomly selected series which were not used in the training.
+We first evaluated the models on 30 randomly series from the original Kaggle training dataset which were not used during the training. Then we submitted the models to the Kaggle competition, which were scored with a private testing dataset. The thresholds used are 1, 3, 5, 7.5, 10, 12.5, 15, 20, 25, 30 minutes as specified by Kaggle.
 
 \subsection{Results}
 1st approach (CPD) best score: 0.23\\
