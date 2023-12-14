@@ -69,11 +69,6 @@
 
 \maketitle
 
-\begin{center}
-    \large
-    \textsc{Nem végleges változat!}
-\end{center}
-
 \begin{abstract}
   Monitoring sleep patterns is essential when researching sleep and sleep-related problems. Automatically analyzing wrist-worn accelerometer data could emerge as a low-cost and practical method for logging sleep periods when conducting large-scale studies. However, traditional rule-based methods have limited accuracy in detecting sleep onset and wakeup events. In this paper we explore ways how deep learning, a powerful machine learning technique could be used to detect sleep states more precisely. We demonstrate two possible approaches to solve this problem and compare the results.\\[2ex]
   Az alvási minták monitorozása elengedhetetlen fontosságú az alvással kapcsolatos kutatások során. A csuklón hordható gyorsulásmérő adatok automatikus elemzése egy olcsón és egyszerű megoldás lehet az alvási ciklusok rögzítésére nagy mintájú kutatások során. Azonban a hagyományos szabályalapú módszerek nem tudják megfelelő pontossággal meghatározni az elalvás és felébredés időpontját. Ebben a dokumentumban megvizsgálunk lehetséges módszereket arra, hogy a mélytanulást, a gépi tanulás egyik formáját használjuk fel az alvási állapot pontosabb meghatározására. Megmutatunk két lehetséges megközelítést, és összevetjük az eredményeket.
@@ -145,7 +140,7 @@ We further refer to this approach as \textit{CPD}.
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{cpd_sampling.png}
-    \caption{A segment of a training sensor series marked with the sampled frames. Grey, green and red frames show sampled frames labeled as \textit{no event}, \textit{onset}, and \textit{wake up} respectively.}
+    \caption{A segment of a training sensor series marked with the sampled frames. Grey, green and red frames show sampled frames labeled as \textit{no event}, \textit{onset}, and \textit{wake up}, respectively.}
     \label{fig:cpd-sampling}
 \end{figure}
 
@@ -161,7 +156,7 @@ We used two features as an input from the time series: ENMO and Z-angle. We stan
 
 \begin{wrapfigure}{R}{0.33\textwidth}
   \label{fig:model-cpd}
-  \includegraphics[width=0.3\textwidth]{model_plot1.png}
+  \includegraphics[width=0.3\textwidth]{cpd_model_plot.png}
   \caption{An overview of the neural network of the CPD approach.}
 \end{wrapfigure}
 
@@ -188,26 +183,28 @@ We used the following algorithm to make predictions using the trained classifier
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{cpd_prediction_plot.png}
-    \caption{An example of result of the prediction algorithm. The uppermost plot shows the combined predicted events, the middle plot shows the fitted and filtered sleep periods. The bottom plot shows the ground truth events. Red lines represent onset events, green lines represent wake up events. The ENMO and Z-angle signals are colored orange and blue respectively.}
+    \caption{An example of result of the prediction algorithm. The uppermost plot shows the combined predicted events, the middle plot shows the fitted and filtered sleep periods. The bottom plot shows the ground truth events. Red lines represent onset events, green lines represent wake up events. The ENMO and Z-angle signals are colored orange and blue, respectively.}
     \label{fig:cpd-prediction-algorithm}
 \end{figure}
 
 See figure \ref{fig:cpd-prediction-algorithm}. for a visual example on the algorithm.
 
-\section{Approach 2: Momentary state classification (MSC)}
-
 \subsection{Overview}
 
-The other method is based on predicting the asleep/awake state in each time step based on a fixed-length segment of sensor data. In each case, the input was a window of 200 time steps, with the mixed training data capturing sequences where the subject gets up, falls asleep, sleeps or is awake. The target output was also a 200 length sequence, with the values 0 if the person was awake and 1 if the person was asleep at each step.
+The other method is based on predicting the asleep/awake state in each time step based on a fixed-
+length segment of sensor data. In each case, we try to predict whether a person was awake or asleep at each step. There are several attempts for this approach notably Sano et al. \cite{sano19} and Chen et al. \cite{chen21}. We tried to make a classifier based on these approaches.
 
-Next, for each step in the series, we predicted whether the person was sleeping or not at that moment. Following this, we calculated a moving average for the predictions. Finally, we filtered out the points corresponding to sleep/wake and wake/sleep transitions, as these were precisely the events we were seeking. We then searched for the longest sleep event for each day. If it is greater than 30 minutes, it is a suitable sleep period.
+Firstly, we trained a deep neural network using BiLSTM (see Zargar et al. \cite{zargar21}) to recognize if a person was awake or was asleep at each step in a given segment of the sensor data series. The output represents the probability of a person being awake at each step. Then we used a simple algorithm like the one mentioned in 4.5.
 
 We further refer to this approach as \textit{MSC}.
 
 \subsection{Data preprocessing}
+We used one feature as an input from the time series: ENMO. We did not use Z-angle because the model's performance was worse when both ENMO and Z-angle were used. In addition we used two derived features from ENMO. The first was a moving average where we took the average of 7 consecutive values of ENMO. The second was a shifted value, where we took the previous value of the ENMO at the given timestamp. We used min-max scaling for standardization. Then we sampled frames around ground-truth onset events, wake up events and in between events. The frame length was set to 200 timestamp.
+
 
 \subsection{Model architecture}
-In the following sentences, we will describe our model. The model input is a Bidirectional LSTM with 200 units. The input to this layer is (200, 3), where 200 refers to the length of a window, and 3 refers to the number of features. We want the full sequence to be returned, so we set the return\_sequences flag to true. The next layer is the same Bidirectional LSTM, we return the sequences, as mentioned before. The output layer is a dense layer with an input shape of (200, 400), where 200 refers to the length of the window, and 400 refers to the output of the Bidirectional LSTM. The output dimension of this layer is (200, 1), assigning a probability to every step of the window. If the probability is higher, the person is considered to be sleeping; if it is lower, then they are awake. The model architecture can be seen on figure \ref{fig:model-lstm}.
+We used a multilayered artificial neural network with bidirectional LSTM layers. BiLSTM layers are well-suited for processing sequential data, allowing us to consider context both forward and backward at each step. After that we added a fully-connected layer with sigmoid activation to predict the probability of sleeping. If the probability is closer to 1, then the person was asleep otherwise was awake. We did not use any regularization method, because the model still had difficulty to learn.
+The detailed architecture of the model can be seen on figure \ref{fig:model-lstm}.
 
 \begin{wrapfigure}{R}{0.33\textwidth}
     \label{fig:model-lstm}
@@ -217,16 +214,21 @@ In the following sentences, we will describe our model. The model input is a Bid
 \end{wrapfigure}
 
 \subsection{Training}
+For the training we used the Adam optimization algorithm and binary crossentropy as a loss function. The training dataset contained around 4.000 samples in each class. The best achieved validation loss was 0.15.
 
 \subsection{Prediction}
+We used the following algorithm to make predictions using the trained classifier model:
+\begin{enumerate}
+    \item First of all, we had predicted values for each steps. In order to filter out possible anomalies, we took a 240-step long moving average for the probabilities.
+    \item After that if the probabilities is higher than 0.5 then at that step the person was asleep so the value of sleeping was 1. Otherwise the people was awake so the value of sleeping was 0. We extracted onset and wakeup events from these values.
+    \item[3-6.] Same as in the CPD approach.
+\end{enumerate}
 
 \section{Evaluation}
 
-For the evaluation of the two approaches, we used the event prediction average precision score metric provided by Kaggle. A description from Kaggle:
+\subsection{Metric}
+For the evaluation of the two models, we used a metric called Event Detection Average Precision. This metric is used by Kaggle to score the submissions to the competition. The metric is described on Kaggle as the following:\footnote{Source: Event Detection AP | Kaggle. \url{https://kaggle.com/code/metric/event-detection-ap}}
 \begin{quote}
-    Event Detection Average Precision, an AUCPR metric for event detection in
-    time series and video.
-
     This metric is similar to IOU-threshold average precision metrics commonly
     used in object detection. For events occuring in time series, we replace the
     IOU threshold with a time tolerance.
@@ -239,17 +241,19 @@ For the evaluation of the two approaches, we used the event prediction average p
     ambiguities resolved in order of decreasing confidence.
 \end{quote}
 
-We evaluated the models on 30 randomly selected series which were not used in the training.
+We first evaluated the models on 30 randomly series from the original Kaggle training dataset which were not used during the training. Then we submitted the models to the Kaggle competition, which were scored with a private testing dataset. The threshold values used are 1, 3, 5, 7.5, 10, 12.5, 15, 20, 25, 30 minutes as specified by Kaggle.
 
 \subsection{Results}
-1st approach (CPD) best score: 0.23\\
-2nd approach (momentary classification) best score: 0.33
+The two approaches achieved the following scores in the Kaggle competition:
+
+CPD model best score: \textbf{0.367}\\
+MSC model best score: \textbf{0.317}
 
 \section{Observations}
 
-The CPD based model is capable of succesfully recognizing almost all ground-truth onset and wake up events, and achieves moderate precision in the localization of the events, which significantly detoriates if the frame size is increased. The greatest limiting factor of the model is that it produces many false-positive predictions, which alter the boundaries of the corresponded sleep periods. It is prone to detecting false positive events partly due to the fact that it only sees a short context of a change point. As a result, this model labels all periods with little variation in sensor data as sleep periods, including intervals where the accelerometer was removed or the subject was resting but was not asleep, which can easily be distinguished from sleep periods when the whole interval is seen. Increasing the frame size and thus giving greater context might allow the model to better differentiate between these cases, but it ruins the localization accuracy as noted before. Perhaps it would be worth considering to combine the change point classification method with a localization regression method.
+Both models performed similarly on the testing data. They were moderately successful in recognizing sleep patterns and scored significantly lower scores than the state-of-the-art solutions. (The competition winner submission scored 0.852.)
 
-
+The CPD based model is capable of succesfully recognizing almost all ground-truth onset and wake up events, and achieves moderate precision in the localization of the events, which significantly detoriates if the frame size is increased. The greatest limiting factor of the model is that it produces many false-positive predictions, which alter the boundaries of the corresponded sleep periods. It is prone to detecting false positive events partly due to the fact that it only sees a short context of a change point. As a result, this model labels all periods with little variation in sensor data as sleep periods, including intervals where the accelerometer was removed or the subject was resting but was not asleep, which can easily be distinguished from sleep periods when the whole interval is seen.
 
 \bibliographystyle{plain}
 \bibliography{sample}
